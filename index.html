@@ -198,28 +198,36 @@
     function deleteItem(code) { if(confirm(`Delete ${code}?`)) { inventory = inventory.filter(i => i.code !== code); saveData(); } }
     function clearHistory() { if(confirm("Clear logs?")) { history = []; saveData(); renderHistory(); } }
 
-    function importCSV() {
+function importCSV() {
         const file = document.getElementById('csvFile').files[0];
         if(!file) return alert("Select file");
         const reader = new FileReader();
         reader.onload = function(e) {
             const lines = e.target.result.split('\n');
+            let count = 0;
             lines.forEach((line, i) => {
                 const parts = line.split(',');
                 if(parts.length >= 4) {
                     const code = parts[0].trim().toUpperCase();
-                    if(!inventory.find(inv => inv.code === code) && code !== "CODE") {
-                        inventory.push({ 
-                            code: code, 
-                            desc: parts[1].trim(), 
-                            min: parseInt(parts[2]) || 0, 
-                            qty: parseInt(parts[3]) || 0 
-                        });
-                    }
+                    
+                    // Skip if it's the header row or if code already exists
+                    if(code === "CODE" || inventory.find(inv => inv.code === code) || !code) return;
+
+                    // Clean the numbers (removes spaces, commas, and symbols)
+                    const cleanMin = parts[2].replace(/[^0-9.]/g, '');
+                    const cleanQty = parts[3].replace(/[^0-9.]/g, '');
+
+                    inventory.push({ 
+                        code: code, 
+                        desc: parts[1].trim(), 
+                        min: parseInt(cleanMin) || 0, 
+                        qty: parseInt(cleanQty) || 0 
+                    });
+                    count++;
                 }
             });
             saveData();
-            alert("Imported with Quantities!");
+            alert(`Successfully imported ${count} items with quantities!`);
         };
         reader.readAsText(file);
     }
@@ -236,3 +244,4 @@
 </script>
 </body>
 </html>
+
