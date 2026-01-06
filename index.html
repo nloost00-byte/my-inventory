@@ -25,6 +25,17 @@
             font-size: 16px; 
             box-sizing: border-box;
         }
+
+        /* Search Bar specific styling */
+        .search-input {
+            background-color: #fff;
+            border: 2px solid var(--primary);
+            margin-bottom: 15px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="%232563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>');
+            background-repeat: no-repeat;
+            background-position: 12px center;
+            padding-left: 45px;
+        }
         
         button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
         .btn-post { background: var(--success); }
@@ -32,10 +43,11 @@
         .btn-del { 
             background: #fee2e2; 
             color: var(--danger); 
-            padding: 5px 10px; 
+            padding: 8px; 
             width: auto; 
             font-size: 0.7rem; 
             margin: 0;
+            border-radius: 6px;
         }
 
         .table-container { overflow-x: auto; }
@@ -58,7 +70,9 @@
 
     <div id="tab-dash" class="tab-content active">
         <div class="card">
-            <h2>Stock Levels</h2>
+            <h2>Search Inventory</h2>
+            <input type="text" id="searchInput" class="search-input" placeholder="Search code or description..." onkeyup="render()">
+            
             <div class="table-container">
                 <table id="invTable">
                     <thead><tr><th>Item</th><th>Qty</th><th>Status</th><th>Action</th></tr></thead>
@@ -113,7 +127,7 @@
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById(tabId).classList.add('active');
         el.classList.add('active');
-        render(); // Refresh on tab switch
+        render(); 
     }
 
     function saveData() {
@@ -137,7 +151,7 @@
     }
 
     function deleteItem(code) {
-        if(confirm(`Are you sure you want to delete ${code}? This cannot be undone.`)) {
+        if(confirm(`Delete ${code}?`)) {
             inventory = inventory.filter(item => item.code !== code);
             saveData();
         }
@@ -147,32 +161,35 @@
         const code = document.getElementById('move-code').value;
         const type = document.getElementById('move-type').value;
         const qty = parseInt(document.getElementById('move-qty').value);
-        if(!code || isNaN(qty)) return alert("Select item and enter quantity");
+        if(!code || isNaN(qty)) return alert("Select item/qty");
         const item = inventory.find(i => i.code === code);
         item.qty = (type === 'IN') ? item.qty + qty : item.qty - qty;
         saveData();
         alert("Success!");
         document.getElementById('move-qty').value = '';
-        document.getElementById('move-inv').value = '';
-        document.getElementById('move-rem').value = '';
     }
 
     function render() {
         const tbody = document.querySelector('#invTable tbody');
         const select = document.querySelector('#move-code');
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        
         tbody.innerHTML = '';
         select.innerHTML = '<option value="">-- Select Item --</option>';
         
         inventory.forEach(item => {
-            const isLow = item.qty <= item.min;
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td><strong>${item.code}</strong><br><small>${item.desc}</small></td>
-                <td>${item.qty}</td>
-                <td>${isLow ? '<span class="low-stock">LOW</span>' : 'OK'}</td>
-                <td><button class="btn-del" onclick="deleteItem('${item.code}')">Delete</button></td>
-            `;
-            tbody.appendChild(row);
+            // Filter logic
+            if (item.code.toLowerCase().includes(query) || item.desc.toLowerCase().includes(query)) {
+                const isLow = item.qty <= item.min;
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${item.code}</strong><br><small>${item.desc}</small></td>
+                    <td>${item.qty}</td>
+                    <td>${isLow ? '<span class="low-stock">LOW</span>' : 'OK'}</td>
+                    <td><button class="btn-del" onclick="deleteItem('${item.code}')">🗑️</button></td>
+                `;
+                tbody.appendChild(row);
+            }
             
             const opt = document.createElement('option');
             opt.value = item.code;
@@ -192,7 +209,7 @@
 
     function importCSV() {
         const file = document.getElementById('csvFile').files[0];
-        if(!file) return alert("Select file");
+        if(!file) return;
         const reader = new FileReader();
         reader.onload = function(e) {
             const lines = e.target.result.split('\n');
@@ -207,7 +224,6 @@
                 }
             });
             saveData();
-            alert("Import Complete!");
         };
         reader.readAsText(file);
     }
