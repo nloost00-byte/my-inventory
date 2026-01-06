@@ -13,10 +13,11 @@
         input, select, button { width: 100%; padding: 14px; margin-bottom: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
         button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
         .btn-post { background: var(--success); }
-        .btn-del { background: #fee2e2; color: var(--danger); padding: 8px; width: auto; font-size: 0.7rem; border-radius: 6px; border:none; }
-        .nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; display: flex; border-top: 1px solid #e2e8f0; z-index: 100; }
-        .nav-item { flex: 1; text-align: center; padding: 15px 5px; font-size: 0.7rem; color: #64748b; cursor: pointer; }
-        .nav-item.active { color: var(--primary); font-weight: bold; border-top: 3px solid var(--primary); }
+        .btn-csv { background: #64748b; margin-top: 10px; }
+        .btn-del { background: #fee2e2; color: var(--danger); padding: 8px; width: auto; font-size: 0.7rem; border-radius: 6px; border:none; cursor: pointer; }
+        .nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; display: flex; border-top: 1px solid #e2e8f0; z-index: 100; height: 70px; }
+        .nav-item { flex: 1; text-align: center; padding-top: 20px; font-size: 0.8rem; color: #64748b; cursor: pointer; border-top: 3px solid transparent; }
+        .nav-item.active { color: var(--primary); font-weight: bold; border-top: 3px solid var(--primary); background: #f8fafc; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         table { width: 100%; border-collapse: collapse; }
@@ -27,11 +28,11 @@
 </head>
 <body>
 
-    <h1 style="text-align:center; font-size: 1.2rem; color: var(--primary);">Cloud Inventory Pro</h1>
+    <h1 style="text-align:center; font-size: 1.2rem; color: var(--primary); margin-bottom: 20px;">Cloud Inventory Pro</h1>
 
     <div id="tab-dash" class="tab-content active">
         <div class="card">
-            <h2>Inventory Levels</h2>
+            <h2 style="font-size:1rem; margin-top:0;">Inventory Levels</h2>
             <input type="text" id="searchInput" placeholder="Search items..." onkeyup="render()">
             <table>
                 <thead><tr><th>Item</th><th>Qty</th><th>Stat</th><th>Del</th></tr></thead>
@@ -42,7 +43,7 @@
 
     <div id="tab-move" class="tab-content">
         <div class="card">
-            <h2>Record Movement</h2>
+            <h2 style="font-size:1rem; margin-top:0;">Record Movement</h2>
             <select id="move-code"></select>
             <select id="move-type"><option value="IN">Stock IN (+)</option><option value="OUT">Stock OUT (-)</option></select>
             <input type="number" id="move-qty" placeholder="Quantity" inputmode="numeric">
@@ -53,34 +54,45 @@
 
     <div id="tab-hist" class="tab-content">
         <div class="card">
-            <h2>Cloud History (Last 50)</h2>
+            <h2 style="font-size:1rem; margin-top:0;">Transaction History</h2>
+            <button class="btn-csv" onclick="exportHistoryCSV()">📥 Download History (CSV)</button>
+            <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
             <div id="historyList">Loading transactions...</div>
         </div>
     </div>
 
     <div id="tab-setup" class="tab-content">
         <div class="card">
-            <h2>Add New Item</h2>
+            <h2 style="font-size:1rem; margin-top:0;">Add New Item</h2>
             <input type="text" id="m-code" placeholder="Item Code">
             <input type="text" id="m-desc" placeholder="Description">
             <input type="number" id="m-min" placeholder="Min Stock Level">
             <button onclick="addItemMaster()">Add to Cloud</button>
         </div>
         <div class="card">
-            <h2>Bulk Import</h2>
+            <h2 style="font-size:1rem; margin-top:0;">Bulk Import</h2>
             <input type="file" id="csvFile" accept=".csv">
             <button onclick="importCSV()">Upload CSV to Cloud</button>
         </div>
     </div>
 
     <div class="nav">
-        <div class="nav-item active" onclick="switchTab('tab-dash', this)">Levels</div>
-        <div class="nav-item" onclick="switchTab('tab-move', this)">Move</div>
-        <div class="nav-item" onclick="switchTab('tab-hist', this)">History</div>
-        <div class="nav-item" onclick="switchTab('tab-setup', this)">Settings</div>
+        <div id="btn-dash" class="nav-item active" onclick="switchTab('tab-dash', this)">Levels</div>
+        <div id="btn-move" class="nav-item" onclick="switchTab('tab-move', this)">Move</div>
+        <div id="btn-hist" class="nav-item" onclick="switchTab('tab-hist', this)">History</div>
+        <div id="btn-setup" class="nav-item" onclick="switchTab('tab-setup', this)">Settings</div>
     </div>
 
 <script>
+    function switchTab(tabId, el) {
+        const tabs = document.getElementsByClassName('tab-content');
+        for (let i = 0; i < tabs.length; i++) { tabs[i].classList.remove('active'); }
+        const navs = document.getElementsByClassName('nav-item');
+        for (let i = 0; i < navs.length; i++) { navs[i].classList.remove('active'); }
+        document.getElementById(tabId).classList.add('active');
+        el.classList.add('active');
+    }
+
     const firebaseConfig = {
       apiKey: "AIzaSyBUvFkq-IyvL4DhXYv_zODzqcEs-hmvxZI",
       authDomain: "my-inventory-e1eb4.firebaseapp.com",
@@ -95,14 +107,12 @@
     let inventory = [];
     let history = [];
 
-    // Real-time listener for Inventory
     db.collection("inventory").onSnapshot((snapshot) => {
         inventory = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         render();
-    }, (error) => { console.error("Sync error:", error); });
+    });
 
-    // Real-time listener for History
-    db.collection("history").orderBy("timestamp", "desc").limit(50).onSnapshot((snapshot) => {
+    db.collection("history").orderBy("timestamp", "desc").limit(100).onSnapshot((snapshot) => {
         history = snapshot.docs.map(doc => doc.data());
         renderHistory();
     });
@@ -113,7 +123,7 @@
         const min = parseInt(document.getElementById('m-min').value) || 0;
         if(!code) return alert("Code required");
         await db.collection("inventory").doc(code).set({ code, desc, min, qty: 0 });
-        document.getElementById('m-code').value = ''; document.getElementById('m-desc').value = '';
+        alert("Item Added!");
     }
 
     async function recordMovement() {
@@ -133,7 +143,7 @@
             dateStr: new Date().toLocaleString()
         });
         await batch.commit();
-        document.getElementById('move-qty').value = '';
+        alert("Stock Synced!");
     }
 
     function render() {
@@ -164,11 +174,28 @@
                 <strong>${h.dateStr || 'Recent'} - ${h.code}</strong><br>
                 ${h.type} ${h.qty} | Note: ${h.inv}
             </div>
-        `).join('') || "No logs.";
+        `).join('') || "No logs yet.";
     }
 
     async function deleteItem(code) {
         if(confirm(`Delete ${code}?`)) await db.collection("inventory").doc(code).delete();
+    }
+
+    function exportHistoryCSV() {
+        if(history.length === 0) return alert("No history to export");
+        let csv = "Date,Item Code,Type,Quantity,Reference\n";
+        history.forEach(h => {
+            csv += `"${h.dateStr}","${h.code}","${h.type}","${h.qty}","${h.inv}"\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute('hidden', '');
+        a.setAttribute('href', url);
+        a.setAttribute('download', 'inventory_history.csv');
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     }
 
     function importCSV() {
@@ -189,16 +216,9 @@
                     });
                 }
             }
-            alert("Cloud Synced!");
+            alert("Cloud Import Successful!");
         };
         reader.readAsText(file);
-    }
-
-    function switchTab(tabId, el) {
-        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        document.getElementById(tabId).classList.add('active');
-        el.classList.add('active');
     }
 </script>
 </body>
