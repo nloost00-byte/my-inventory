@@ -11,44 +11,24 @@
             --success: #22c55e;
             --bg: #f1f5f9;
         }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 10px; padding-bottom: 70px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 10px; padding-bottom: 80px; }
         .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 15px; }
         
         h2 { font-size: 1rem; margin-top: 0; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; }
         
         input, select, button { 
-            width: 100%; 
-            padding: 14px; 
-            margin-bottom: 10px; 
-            border: 1px solid #cbd5e1; 
-            border-radius: 8px; 
-            font-size: 16px; 
-            box-sizing: border-box;
+            width: 100%; padding: 14px; margin-bottom: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; box-sizing: border-box;
         }
 
-        /* Search Bar specific styling */
         .search-input {
-            background-color: #fff;
-            border: 2px solid var(--primary);
-            margin-bottom: 15px;
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="%232563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>');
-            background-repeat: no-repeat;
-            background-position: 12px center;
-            padding-left: 45px;
+            background-color: #fff; border: 2px solid var(--primary); margin-bottom: 15px;
+            padding-left: 15px;
         }
         
         button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
         .btn-post { background: var(--success); }
         .btn-csv { background: #64748b; font-size: 0.8rem; }
-        .btn-del { 
-            background: #fee2e2; 
-            color: var(--danger); 
-            padding: 8px; 
-            width: auto; 
-            font-size: 0.7rem; 
-            margin: 0;
-            border-radius: 6px;
-        }
+        .btn-del { background: #fee2e2; color: var(--danger); padding: 8px; width: auto; font-size: 0.7rem; margin: 0; border-radius: 6px; }
 
         .table-container { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; min-width: 350px; }
@@ -60,8 +40,12 @@
         .tab-content.active { display: block; }
         
         .nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; display: flex; border-top: 1px solid #e2e8f0; z-index: 100; }
-        .nav-item { flex: 1; text-align: center; padding: 15px; font-size: 0.75rem; color: #64748b; cursor: pointer; }
+        .nav-item { flex: 1; text-align: center; padding: 15px 5px; font-size: 0.7rem; color: #64748b; cursor: pointer; }
         .nav-item.active { color: var(--primary); font-weight: bold; border-top: 3px solid var(--primary); }
+
+        .hist-item { border-left: 4px solid var(--primary); padding-left: 10px; margin-bottom: 10px; font-size: 0.8rem; }
+        .hist-in { border-color: var(--success); }
+        .hist-out { border-color: var(--danger); }
     </style>
 </head>
 <body>
@@ -72,7 +56,6 @@
         <div class="card">
             <h2>Search Inventory</h2>
             <input type="text" id="searchInput" class="search-input" placeholder="Search code or description..." onkeyup="render()">
-            
             <div class="table-container">
                 <table id="invTable">
                     <thead><tr><th>Item</th><th>Qty</th><th>Status</th><th>Action</th></tr></thead>
@@ -97,6 +80,14 @@
         </div>
     </div>
 
+    <div id="tab-hist" class="tab-content">
+        <div class="card">
+            <h2>Transaction History</h2>
+            <div id="historyList"></div>
+            <button class="btn-csv" onclick="clearHistory()" style="margin-top:10px; background:#ef4444;">Clear All History</button>
+        </div>
+    </div>
+
     <div id="tab-setup" class="tab-content">
         <div class="card">
             <h2>Add New Item</h2>
@@ -107,8 +98,9 @@
         </div>
         <div class="card">
             <h2>Data Tools</h2>
+            <p style="font-size:0.7rem; color:#64748b;">CSV Order: Code, Desc, Min, Qty</p>
             <input type="file" id="csvFile" accept=".csv" class="btn-csv">
-            <button class="btn-csv" onclick="importCSV()">Import CSV</button>
+            <button class="btn-csv" onclick="importCSV()">Import CSV (4 Columns)</button>
             <button class="btn-csv" style="margin-top:5px;" onclick="exportInventory()">Export Inventory</button>
         </div>
     </div>
@@ -116,22 +108,26 @@
     <div class="nav">
         <div class="nav-item active" onclick="switchTab('tab-dash', this)">Levels</div>
         <div class="nav-item" onclick="switchTab('tab-move', this)">Move</div>
+        <div class="nav-item" onclick="switchTab('tab-hist', this)">History</div>
         <div class="nav-item" onclick="switchTab('tab-setup', this)">Settings</div>
     </div>
 
 <script>
     let inventory = JSON.parse(localStorage.getItem('mob_inv_master')) || [];
+    let history = JSON.parse(localStorage.getItem('mob_inv_history')) || [];
     
     function switchTab(tabId, el) {
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById(tabId).classList.add('active');
         el.classList.add('active');
+        if(tabId === 'tab-hist') renderHistory();
         render(); 
     }
 
     function saveData() {
         localStorage.setItem('mob_inv_master', JSON.stringify(inventory));
+        localStorage.setItem('mob_inv_history', JSON.stringify(history));
         render();
     }
 
@@ -140,32 +136,30 @@
         const desc = document.getElementById('m-desc').value.trim();
         const min = parseInt(document.getElementById('m-min').value);
         if(!code || isNaN(min)) return alert("Missing Info");
-        if(inventory.find(i => i.code === code)) return alert("Item Code already exists!");
-        
+        if(inventory.find(i => i.code === code)) return alert("Exists!");
         inventory.push({ code, desc, min, qty: 0 });
         saveData();
-        alert("Item Added!");
-        document.getElementById('m-code').value = '';
-        document.getElementById('m-desc').value = '';
-        document.getElementById('m-min').value = '';
-    }
-
-    function deleteItem(code) {
-        if(confirm(`Delete ${code}?`)) {
-            inventory = inventory.filter(item => item.code !== code);
-            saveData();
-        }
+        alert("Added!");
     }
 
     function recordMovement() {
         const code = document.getElementById('move-code').value;
         const type = document.getElementById('move-type').value;
         const qty = parseInt(document.getElementById('move-qty').value);
+        const inv = document.getElementById('move-inv').value || "N/A";
+        const rem = document.getElementById('move-rem').value || "-";
+
         if(!code || isNaN(qty)) return alert("Select item/qty");
         const item = inventory.find(i => i.code === code);
         item.qty = (type === 'IN') ? item.qty + qty : item.qty - qty;
+        
+        history.unshift({
+            date: new Date().toLocaleString(),
+            code, type, qty, inv, rem
+        });
+
         saveData();
-        alert("Success!");
+        alert("Posted!");
         document.getElementById('move-qty').value = '';
     }
 
@@ -173,59 +167,69 @@
         const tbody = document.querySelector('#invTable tbody');
         const select = document.querySelector('#move-code');
         const query = document.getElementById('searchInput').value.toLowerCase();
-        
         tbody.innerHTML = '';
         select.innerHTML = '<option value="">-- Select Item --</option>';
-        
         inventory.forEach(item => {
-            // Filter logic
             if (item.code.toLowerCase().includes(query) || item.desc.toLowerCase().includes(query)) {
                 const isLow = item.qty <= item.min;
-                const row = document.createElement('tr');
-                row.innerHTML = `
+                tbody.innerHTML += `<tr>
                     <td><strong>${item.code}</strong><br><small>${item.desc}</small></td>
                     <td>${item.qty}</td>
                     <td>${isLow ? '<span class="low-stock">LOW</span>' : 'OK'}</td>
                     <td><button class="btn-del" onclick="deleteItem('${item.code}')">🗑️</button></td>
-                `;
-                tbody.appendChild(row);
+                </tr>`;
             }
-            
-            const opt = document.createElement('option');
-            opt.value = item.code;
-            opt.textContent = `${item.code} (${item.desc})`;
-            select.appendChild(opt);
+            select.innerHTML += `<option value="${item.code}">${item.code}</option>`;
         });
     }
 
-    function exportInventory() {
-        let csv = "Item Code,Description,Qty,Min\n";
-        inventory.forEach(i => csv += `${i.code},${i.desc},${i.qty},${i.min}\n`);
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = 'inventory.csv'; a.click();
+    function renderHistory() {
+        const hList = document.getElementById('historyList');
+        hList.innerHTML = history.length === 0 ? "No history yet." : "";
+        history.slice(0, 50).forEach(h => {
+            hList.innerHTML += `<div class="hist-item ${h.type==='IN'?'hist-in':'hist-out'}">
+                <strong>${h.date} - ${h.code}</strong><br>
+                ${h.type} ${h.qty} | Inv: ${h.inv}<br>
+                <small>${h.rem}</small>
+            </div>`;
+        });
     }
+
+    function deleteItem(code) { if(confirm(`Delete ${code}?`)) { inventory = inventory.filter(i => i.code !== code); saveData(); } }
+    function clearHistory() { if(confirm("Clear logs?")) { history = []; saveData(); renderHistory(); } }
 
     function importCSV() {
         const file = document.getElementById('csvFile').files[0];
-        if(!file) return;
+        if(!file) return alert("Select file");
         const reader = new FileReader();
         reader.onload = function(e) {
             const lines = e.target.result.split('\n');
             lines.forEach((line, i) => {
-                if(i === 0 || !line.trim()) return;
                 const parts = line.split(',');
-                if(parts.length >= 3) {
+                if(parts.length >= 4) {
                     const code = parts[0].trim().toUpperCase();
-                    if(!inventory.find(inv => inv.code === code)) {
-                        inventory.push({ code: code, desc: parts[1].trim(), min: parseInt(parts[2]), qty: 0 });
+                    if(!inventory.find(inv => inv.code === code) && code !== "CODE") {
+                        inventory.push({ 
+                            code: code, 
+                            desc: parts[1].trim(), 
+                            min: parseInt(parts[2]) || 0, 
+                            qty: parseInt(parts[3]) || 0 
+                        });
                     }
                 }
             });
             saveData();
+            alert("Imported with Quantities!");
         };
         reader.readAsText(file);
+    }
+
+    function exportInventory() {
+        let csv = "Code,Description,Min,Qty\n";
+        inventory.forEach(i => csv += `${i.code},${i.desc},${i.min},${i.qty}\n`);
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'inventory.csv'; a.click();
     }
 
     render();
