@@ -13,7 +13,7 @@
         input, select, button { width: 100%; padding: 14px; margin-bottom: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
         button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
         .btn-post { background: var(--success); }
-        .btn-del { background: #fee2e2; color: var(--danger); padding: 8px; width: auto; font-size: 0.7rem; border-radius: 6px; }
+        .btn-del { background: #fee2e2; color: var(--danger); padding: 8px; width: auto; font-size: 0.7rem; border-radius: 6px; border:none; }
         .nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; display: flex; border-top: 1px solid #e2e8f0; z-index: 100; }
         .nav-item { flex: 1; text-align: center; padding: 15px 5px; font-size: 0.7rem; color: #64748b; cursor: pointer; }
         .nav-item.active { color: var(--primary); font-weight: bold; border-top: 3px solid var(--primary); }
@@ -22,7 +22,7 @@
         table { width: 100%; border-collapse: collapse; }
         th, td { text-align: left; padding: 12px 8px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; }
         .low-stock { background: #fee2e2; color: #b91c1c; font-weight: bold; border-radius: 4px; padding: 2px 5px; }
-        .hist-item { border-left: 4px solid var(--primary); padding-left: 10px; margin-bottom: 10px; font-size: 0.8rem; }
+        .hist-item { border-left: 4px solid var(--primary); padding: 10px; margin-bottom: 10px; font-size: 0.8rem; background: #fff; border-radius: 0 8px 8px 0; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
     </style>
 </head>
 <body>
@@ -32,9 +32,9 @@
     <div id="tab-dash" class="tab-content active">
         <div class="card">
             <h2>Inventory Levels</h2>
-            <input type="text" id="searchInput" placeholder="Search..." onkeyup="render()">
-            <table id="invTable">
-                <thead><tr><th>Item</th><th>Qty</th><th>Status</th><th>Action</th></tr></thead>
+            <input type="text" id="searchInput" placeholder="Search items..." onkeyup="render()">
+            <table>
+                <thead><tr><th>Item</th><th>Qty</th><th>Stat</th><th>Del</th></tr></thead>
                 <tbody id="invTableBody"></tbody>
             </table>
         </div>
@@ -45,16 +45,16 @@
             <h2>Record Movement</h2>
             <select id="move-code"></select>
             <select id="move-type"><option value="IN">Stock IN (+)</option><option value="OUT">Stock OUT (-)</option></select>
-            <input type="number" id="move-qty" placeholder="Quantity">
-            <input type="text" id="move-inv" placeholder="Invoice #">
-            <button class="btn-post" onclick="recordMovement()">Update Cloud</button>
+            <input type="number" id="move-qty" placeholder="Quantity" inputmode="numeric">
+            <input type="text" id="move-inv" placeholder="Invoice / Remark">
+            <button class="btn-post" onclick="recordMovement()">Sync Change to Cloud</button>
         </div>
     </div>
 
     <div id="tab-hist" class="tab-content">
         <div class="card">
             <h2>Cloud History (Last 50)</h2>
-            <div id="historyList">Loading history...</div>
+            <div id="historyList">Loading transactions...</div>
         </div>
     </div>
 
@@ -67,7 +67,7 @@
             <button onclick="addItemMaster()">Add to Cloud</button>
         </div>
         <div class="card">
-            <h2>Import Data</h2>
+            <h2>Bulk Import</h2>
             <input type="file" id="csvFile" accept=".csv">
             <button onclick="importCSV()">Upload CSV to Cloud</button>
         </div>
@@ -82,20 +82,12 @@
 
 <script>
     const firebaseConfig = {
-  apiKey: "AIzaSyBUvFkq-IyvL4DhXYv_zODzqcEs-hmvxZI",
-  authDomain: "my-inventory-e1eb4.firebaseapp.com",
-  projectId: "my-inventory-e1eb4",
-  storageBucket: "my-inventory-e1eb4.firebasestorage.app",
-  messagingSenderId: "753821889716",
-  appId: "1:753821889716:web:e377500d6ccb64586d53e1"
-};
-    const firebaseConfig = {
-        apiKey: "YOUR_API_KEY",
-        authDomain: "YOUR_PROJECT.firebaseapp.com",
-        projectId: "YOUR_PROJECT_ID",
-        storageBucket: "YOUR_PROJECT.appspot.com",
-        messagingSenderId: "YOUR_SENDER_ID",
-        appId: "YOUR_APP_ID"
+      apiKey: "AIzaSyBUvFkq-IyvL4DhXYv_zODzqcEs-hmvxZI",
+      authDomain: "my-inventory-e1eb4.firebaseapp.com",
+      projectId: "my-inventory-e1eb4",
+      storageBucket: "my-inventory-e1eb4.firebasestorage.app",
+      messagingSenderId: "753821889716",
+      appId: "1:753821889716:web:e377500d6ccb64586d53e1"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -103,13 +95,13 @@
     let inventory = [];
     let history = [];
 
-    // Sync Inventory
+    // Real-time listener for Inventory
     db.collection("inventory").onSnapshot((snapshot) => {
         inventory = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         render();
-    });
+    }, (error) => { console.error("Sync error:", error); });
 
-    // Sync History
+    // Real-time listener for History
     db.collection("history").orderBy("timestamp", "desc").limit(50).onSnapshot((snapshot) => {
         history = snapshot.docs.map(doc => doc.data());
         renderHistory();
@@ -119,9 +111,9 @@
         const code = document.getElementById('m-code').value.toUpperCase().trim();
         const desc = document.getElementById('m-desc').value.trim();
         const min = parseInt(document.getElementById('m-min').value) || 0;
-        if(!code) return;
+        if(!code) return alert("Code required");
         await db.collection("inventory").doc(code).set({ code, desc, min, qty: 0 });
-        alert("Added!");
+        document.getElementById('m-code').value = ''; document.getElementById('m-desc').value = '';
     }
 
     async function recordMovement() {
@@ -129,17 +121,19 @@
         const type = document.getElementById('move-type').value;
         const qty = parseInt(document.getElementById('move-qty').value);
         const inv = document.getElementById('move-inv').value || "N/A";
-        if(!code || isNaN(qty)) return;
+        if(!code || isNaN(qty)) return alert("Select item and qty");
 
         const item = inventory.find(i => i.code === code);
         const newQty = (type === 'IN') ? item.qty + qty : item.qty - qty;
 
-        await db.collection("inventory").doc(code).update({ qty: newQty });
-        await db.collection("history").add({
+        const batch = db.batch();
+        batch.update(db.collection("inventory").doc(code), { qty: newQty });
+        batch.set(db.collection("history").doc(), {
             code, type, qty, inv, timestamp: firebase.firestore.FieldValue.serverTimestamp(),
             dateStr: new Date().toLocaleString()
         });
-        alert("Updated!");
+        await batch.commit();
+        document.getElementById('move-qty').value = '';
     }
 
     function render() {
@@ -149,7 +143,7 @@
         tbody.innerHTML = '';
         select.innerHTML = '<option value="">-- Select Item --</option>';
 
-        inventory.forEach(item => {
+        inventory.sort((a,b) => a.code.localeCompare(b.code)).forEach(item => {
             if (item.code.toLowerCase().includes(query) || (item.desc && item.desc.toLowerCase().includes(query))) {
                 const isLow = item.qty <= (item.min || 0);
                 tbody.innerHTML += `<tr>
@@ -167,10 +161,10 @@
         const hList = document.getElementById('historyList');
         hList.innerHTML = history.map(h => `
             <div class="hist-item" style="border-color: ${h.type==='IN'?'#22c55e':'#ef4444'}">
-                <strong>${h.dateStr} - ${h.code}</strong><br>
-                ${h.type} ${h.qty} | Inv: ${h.inv}
+                <strong>${h.dateStr || 'Recent'} - ${h.code}</strong><br>
+                ${h.type} ${h.qty} | Note: ${h.inv}
             </div>
-        `).join('') || "No history found.";
+        `).join('') || "No logs.";
     }
 
     async function deleteItem(code) {
@@ -179,6 +173,7 @@
 
     function importCSV() {
         const file = document.getElementById('csvFile').files[0];
+        if(!file) return alert("Choose file");
         const reader = new FileReader();
         reader.onload = async function(e) {
             const lines = e.target.result.split('\n');
@@ -194,7 +189,7 @@
                     });
                 }
             }
-            alert("Cloud Import Complete!");
+            alert("Cloud Synced!");
         };
         reader.readAsText(file);
     }
