@@ -17,114 +17,104 @@
     
     <style>
         :root { --primary: #2563eb; --danger: #ef4444; --success: #22c55e; --bg: #f1f5f9; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 10px; padding-bottom: 90px; -webkit-tap-highlight-color: transparent; }
-        * { user-select: none; -webkit-user-select: none; }
-        input, select { user-select: text; -webkit-user-select: text; }
-
-        #auth-screen { position: fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:10000; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:30px; box-sizing:border-box; text-align:center; }
-        #loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; display: none; flex-direction: column; align-items: center; justify-content: center; }
-        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-top: 20px; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 10px; padding-bottom: 90px; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
+        * { box-sizing: border-box; }
         .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 15px; }
-        h2 { font-size: 1rem; margin-top: 0; color: #1e293b; }
-        input, select, button { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
+        input, select, button { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; }
         button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
-        .btn-post { background: var(--success); height: 55px; font-size: 1.1rem; }
-        .btn-report { background: #64748b; font-size: 0.85rem; padding: 8px; margin-top: 5px; }
-        
         .nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; display: flex; border-top: 1px solid #e2e8f0; height: 75px; z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
         .nav-item { flex: 1; text-align: center; padding-top: 15px; font-size: 0.75rem; color: #64748b; }
         .nav-item.active { color: var(--primary); font-weight: bold; border-top: 3px solid var(--primary); }
-        .tab-content { display: none; padding-top: 10px; }
+        .tab-content { display: none; }
         .tab-content.active { display: block; }
-        
-        table { width: 100%; border-collapse: collapse; }
-        th, td { text-align: left; padding: 12px 5px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; }
-        .hist-group { background: white; border-left: 5px solid var(--success); padding: 12px; margin-bottom: 10px; border-radius: 8px; position: relative; }
-        .user-tag { font-size: 0.65rem; background: #e2e8f0; color: #475569; padding: 2px 6px; border-radius: 10px; font-weight: bold; position: absolute; top: 12px; right: 12px; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        th, td { text-align: left; padding: 10px 5px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; overflow: hidden; }
+        .desc-text { font-size: 0.7rem; color: #64748b; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        .spinner { width: 30px; height: 30px; border: 3px solid #f3f3f3; border-top: 3px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .hist-group { background: #fff; border-left: 4px solid var(--success); padding: 10px; margin-bottom: 8px; border-radius: 6px; position: relative; font-size: 0.8rem; border-top: 1px solid #eee; border-right: 1px solid #eee; }
+        .user-tag { font-size: 0.6rem; background: #eee; padding: 2px 5px; border-radius: 4px; position: absolute; top: 10px; right: 10px; }
     </style>
 </head>
 <body>
 
-    <div id="auth-screen">
-        <img src="icon.png" style="width:120px; border-radius:20px; margin-bottom:20px;">
-        <h2>Inventory Login</h2>
-        <input type="email" id="auth-email" placeholder="Email Address">
+    <div id="auth-screen" style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; padding:20px; text-align:center;">
+        <img src="icon.png" style="width:100px; border-radius:20px; margin-bottom:20px;">
+        <h2>Warehouse Login</h2>
+        <input type="email" id="auth-email" placeholder="Email">
         <input type="password" id="auth-pass" placeholder="Password">
-        <button onclick="handleAuth()">Login / Sign Up</button>
+        <button onclick="handleAuth()">Sign In / Up</button>
     </div>
 
-    <div id="loading-screen">
-        <div class="spinner"></div>
-        <p>Syncing Warehouse...</p>
-    </div>
+    <div id="loading-screen"><div class="spinner"></div></div>
 
-    <h1 style="text-align:center; font-size: 1.1rem; color: var(--primary); margin: 10px 0;">Cloud Inventory Pro</h1>
+    <div id="main-ui" style="display:none;">
+        <h1 style="text-align:center; font-size: 1rem; color: var(--primary); margin: 10px 0;">Inventory Pro</h1>
 
-    <div id="tab-dash" class="tab-content active">
-        <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <h2 style="margin:0;">Inventory Levels</h2>
-                <button onclick="downloadStockReport()" class="btn-report" style="width:auto; margin:0;">📥 Stock Take CSV</button>
+        <div id="tab-dash" class="tab-content active">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h2 style="margin:0;">Levels</h2>
+                    <button onclick="downloadStockReport()" style="width:auto; padding:5px 10px; font-size:0.7rem; background:#64748b;">📥 CSV</button>
+                </div>
+                <input type="text" id="searchInput" placeholder="Search..." onkeyup="render()">
+                <table>
+                    <colgroup><col style="width:65%"><col style="width:15%"><col style="width:20%"></colgroup>
+                    <thead><tr><th>Item</th><th>Qty</th><th>Stat</th></tr></thead>
+                    <tbody id="invTableBody"></tbody>
+                </table>
             </div>
-            <input type="text" id="searchInput" placeholder="Search items..." onkeyup="render()">
-            <table>
-                <thead><tr><th>Item</th><th>Qty</th><th>Stat</th></tr></thead>
-                <tbody id="invTableBody"></tbody>
-            </table>
         </div>
-    </div>
 
-    <div id="tab-move" class="tab-content">
-        <div class="card">
-            <h2>New Entry</h2>
-            <input type="text" id="batch-id-input" placeholder="Invoice / Ref Number" style="border: 2px solid var(--primary); font-weight: bold;">
-            <input type="text" id="moveSearch" placeholder="Find item..." onkeyup="filterMoveDropdown()">
-            <select id="move-code"></select>
-            <div style="display:flex; gap:10px;">
-                <select id="move-type" style="flex:1;"><option value="IN">IN (+)</option><option value="OUT">OUT (-)</option></select>
-                <input type="number" id="move-qty" placeholder="Qty" style="flex:1;" inputmode="numeric">
+        <div id="tab-move" class="tab-content">
+            <div class="card">
+                <h2>Stock Movement</h2>
+                <input type="text" id="batch-id-input" placeholder="Invoice # (Required)" style="border: 2px solid var(--primary);">
+                <input type="text" id="moveSearch" placeholder="Filter items..." onkeyup="filterMoveDropdown()">
+                <select id="move-code"></select>
+                <div style="display:flex; gap:10px;">
+                    <select id="move-type" style="flex:1.5;"><option value="IN">IN (+)</option><option value="OUT">OUT (-)</option></select>
+                    <input type="number" id="move-qty" placeholder="Qty" style="flex:1;" inputmode="numeric">
+                </div>
+                <button onclick="addToCart()">Add to Batch</button>
             </div>
-            <button onclick="addToCart()">+ Add to List</button>
+            <div class="card" id="cartCard" style="display:none; background:#f8fafc;">
+                <h3>Batch Preview</h3>
+                <div id="cartList" style="font-size:0.85rem; margin-bottom:10px;"></div>
+                <button onclick="processBatch()" style="background:var(--success);">Sync to Cloud</button>
+            </div>
         </div>
-        <div class="card" id="cartCard" style="display:none;">
-            <h3>Batch Preview</h3>
-            <div id="cartList" style="margin-bottom:15px; font-size:0.9rem;"></div>
-            <button class="btn-post" onclick="processBatch()">Sync to Cloud</button>
-        </div>
-    </div>
 
-    <div id="tab-hist" class="tab-content">
-        <div class="card">
-            <h2>Warehouse Activity</h2>
-            <input type="text" id="activitySearch" placeholder="Search Invoice or Item..." onkeyup="renderHistory()" style="background:#f0f9ff; border: 1px solid var(--primary);">
-            <div id="historyList"></div>
+        <div id="tab-hist" class="tab-content">
+            <div class="card">
+                <h2>Recent Activity</h2>
+                <input type="text" id="activitySearch" placeholder="Search Ref or Item..." onkeyup="renderHistory()">
+                <div id="historyList"></div>
+            </div>
         </div>
-    </div>
 
-    <div id="tab-setup" class="tab-content">
-        <div class="card" style="border: 2px solid var(--primary);">
-            <h2>Warehouse Link</h2>
-            <p style="font-size:0.8rem;">Your Warehouse ID:</p>
-            <input type="text" id="warehouse-id-display" readonly style="background:#f8fafc; font-family:monospace; color:var(--primary);">
-            <hr>
-            <p style="font-size:0.8rem;">Join Warehouse:</p>
-            <input type="text" id="join-id-input" placeholder="Paste ID here">
-            <button onclick="joinWarehouse()" style="background:#64748b;">Link Phone</button>
+        <div id="tab-setup" class="tab-content">
+            <div class="card">
+                <h2>Warehouse Sync</h2>
+                <p style="font-size:0.7rem;">Share this ID with staff:</p>
+                <input type="text" id="warehouse-id-display" readonly style="background:#f1f5f9; font-size:0.7rem;">
+                <input type="text" id="join-id-input" placeholder="Join another ID">
+                <button onclick="joinWarehouse()" style="background:#64748b;">Link Warehouse</button>
+            </div>
+            <div class="card">
+                <input type="file" id="csvFile" accept=".csv">
+                <button onclick="importCSV()" style="background:#64748b;">Update via CSV</button>
+                <button onclick="firebase.auth().signOut()" style="background:var(--danger); margin-top:20px;">Logout</button>
+            </div>
         </div>
-        <div class="card">
-            <button onclick="firebase.auth().signOut()" style="background:var(--danger); margin-bottom: 20px;">Logout</button>
-            <input type="file" id="csvFile" accept=".csv">
-            <button onclick="importCSV()" style="background:#64748b;">Upload Master CSV</button>
-        </div>
-    </div>
 
-    <div class="nav">
-        <div class="nav-item active" onclick="switchTab('tab-dash', this)">Levels</div>
-        <div class="nav-item" onclick="switchTab('tab-move', this)">Move</div>
-        <div class="nav-item" onclick="switchTab('tab-hist', this)">Activity</div>
-        <div class="nav-item" onclick="switchTab('tab-setup', this)">Setup</div>
+        <div class="nav">
+            <div class="nav-item active" onclick="switchTab('tab-dash', this)">Levels</div>
+            <div class="nav-item" onclick="switchTab('tab-move', this)">Move</div>
+            <div class="nav-item" onclick="switchTab('tab-hist', this)">Activity</div>
+            <div class="nav-item" onclick="switchTab('tab-setup', this)">Setup</div>
+        </div>
     </div>
 
 <script>
@@ -141,18 +131,13 @@
     const db = firebase.firestore();
     const auth = firebase.auth();
 
-    let currentUser = null;
-    let currentWarehouseID = null;
-    let inventory = [];
-    let history = [];
-    let cart = [];
-    let unsubInv = null;
-    let unsubHist = null;
+    let currentUser = null, currentWarehouseID = null, inventory = [], historyData = [], cart = [], unsubInv = null, unsubHist = null;
 
     auth.onAuthStateChanged(async user => {
         if (user) {
             currentUser = user;
             document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('main-ui').style.display = 'block';
             document.getElementById('loading-screen').style.display = 'flex';
             const userDoc = await db.collection("users").doc(user.uid).get();
             currentWarehouseID = (userDoc.exists && userDoc.data().linkedWarehouse) ? userDoc.data().linkedWarehouse : user.uid;
@@ -160,41 +145,54 @@
             startDataListeners();
         } else {
             document.getElementById('auth-screen').style.display = 'flex';
+            document.getElementById('main-ui').style.display = 'none';
         }
     });
 
     async function handleAuth() {
-        const e = document.getElementById('auth-email').value;
-        const p = document.getElementById('auth-pass').value;
+        const e = document.getElementById('auth-email').value, p = document.getElementById('auth-pass').value;
+        if(!e || !p) return;
         try { await auth.signInWithEmailAndPassword(e, p); } catch { await auth.createUserWithEmailAndPassword(e, p); }
     }
 
-    async function joinWarehouse() {
-        const id = document.getElementById('join-id-input').value.trim();
-        if(id) { await db.collection("users").doc(currentUser.uid).set({ linkedWarehouse: id }, {merge:true}); location.reload(); }
-    }
-
     function startDataListeners() {
-        const path = db.collection("warehouses").doc(currentWarehouseID);
         if(unsubInv) unsubInv();
+        if(unsubHist) unsubHist();
+        
+        const path = db.collection("warehouses").doc(currentWarehouseID);
+        
         unsubInv = path.collection("inventory").onSnapshot(snap => {
             inventory = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             render(); filterMoveDropdown();
             document.getElementById('loading-screen').style.display = 'none';
         });
 
-        if(unsubHist) unsubHist();
-        unsubHist = path.collection("history").orderBy("timestamp", "desc").limit(100).onSnapshot(snap => {
-            history = snap.docs.map(doc => doc.data());
+        unsubHist = path.collection("history").orderBy("timestamp", "desc").limit(30).onSnapshot(snap => {
+            historyData = snap.docs.map(doc => doc.data());
             renderHistory();
         });
     }
 
+    function render() {
+        const tbody = document.getElementById('invTableBody'), q = document.getElementById('searchInput').value.toLowerCase();
+        tbody.innerHTML = '';
+        inventory.sort((a,b)=>a.code.localeCompare(b.code)).forEach(item => {
+            if(item.code.toLowerCase().includes(q) || (item.desc && item.desc.toLowerCase().includes(q))) {
+                const low = item.qty <= (item.min || 0);
+                tbody.innerHTML += `<tr><td><strong>${item.code}</strong><span class="desc-text">${item.desc||''}</span></td><td>${item.qty}</td><td style="color:${low?'red':'green'}">${low?'LOW':'OK'}</td></tr>`;
+            }
+        });
+    }
+
+    function renderHistory() {
+        const q = document.getElementById('activitySearch').value.toLowerCase(), list = document.getElementById('historyList');
+        list.innerHTML = historyData.filter(h => h.batchNum.toString().toLowerCase().includes(q) || h.items.some(i => i.code.toLowerCase().includes(q)))
+            .map(h => `<div class="hist-group"><span class="user-tag">${h.user?h.user.split('@')[0]:'User'}</span><b>Ref: ${h.batchNum}</b><br><small>${h.date}</small><div style="margin-top:5px;">${h.items.map(i=>`• ${i.code} (${i.type} ${i.qty})`).join('<br>')}</div></div>`).join('');
+    }
+
     function addToCart() {
-        const c = document.getElementById('move-code').value;
-        const t = document.getElementById('move-type').value;
-        const q = parseInt(document.getElementById('move-qty').value);
-        if(!c || !q) return alert("Select item and qty");
+        const c = document.getElementById('move-code').value, t = document.getElementById('move-type').value, q = parseInt(document.getElementById('move-qty').value);
+        if(!c || !q) return;
         cart.push({ code: c, type: t, qty: q });
         document.getElementById('cartCard').style.display = 'block';
         document.getElementById('cartList').innerHTML = cart.map(i => `• ${i.code}: ${i.type} ${i.qty}`).join('<br>');
@@ -202,50 +200,16 @@
 
     async function processBatch() {
         const inv = document.getElementById('batch-id-input').value.trim();
-        if(!inv || cart.length === 0) return alert("Missing Invoice # or items");
-        const dbBatch = db.batch();
-        const path = db.collection("warehouses").doc(currentWarehouseID);
-
-        cart.forEach(entry => {
-            const item = inventory.find(i => i.code === entry.code);
-            const newQty = (entry.type === 'IN') ? (item.qty + entry.qty) : (item.qty - entry.qty);
-            dbBatch.update(path.collection("inventory").doc(entry.code), { qty: newQty });
+        if(!inv || cart.length === 0) return alert("Need Invoice #");
+        const b = db.batch(), p = db.collection("warehouses").doc(currentWarehouseID);
+        cart.forEach(e => {
+            const item = inventory.find(i => i.code === e.code);
+            b.update(p.collection("inventory").doc(e.code), { qty: (e.type === 'IN') ? (item.qty + e.qty) : (item.qty - e.qty) });
         });
-
-        dbBatch.set(path.collection("history").doc(), {
-            batchNum: inv, items: cart, user: currentUser.email,
-            date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' }),
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        });
-
-        await dbBatch.commit();
+        b.set(p.collection("history").doc(), { batchNum: inv, items: cart, user: currentUser.email, date: new Date().toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}), timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+        await b.commit();
         cart = []; document.getElementById('cartCard').style.display = 'none'; document.getElementById('batch-id-input').value = '';
-        alert("Synced!");
-    }
-
-    function render() {
-        const tbody = document.getElementById('invTableBody');
-        const q = document.getElementById('searchInput').value.toLowerCase();
-        tbody.innerHTML = '';
-        inventory.sort((a,b)=>a.code.localeCompare(b.code)).forEach(item => {
-            if(item.code.toLowerCase().includes(q)) {
-                const low = item.qty <= (item.min || 0);
-                tbody.innerHTML += `<tr><td><strong>${item.code}</strong></td><td>${item.qty}</td><td><span style="color:${low?'red':'green'}">${low?'LOW':'OK'}</span></td></tr>`;
-            }
-        });
-    }
-
-    function renderHistory() {
-        const q = document.getElementById('activitySearch').value.toLowerCase();
-        const list = document.getElementById('historyList');
-        list.innerHTML = history.filter(h => h.batchNum.toString().toLowerCase().includes(q) || h.items.some(i => i.code.toLowerCase().includes(q)))
-            .map(h => `
-            <div class="hist-group">
-                <span class="user-tag">${h.user ? h.user.split('@')[0] : 'Admin'}</span>
-                <div style="font-size:0.85rem; font-weight:bold; margin-bottom:5px;">Ref: ${h.batchNum} <span style="font-weight:normal; font-size:0.7rem; color:#64748b;">• ${h.date}</span></div>
-                ${h.items.map(i => `<div style="font-size:0.8rem;">• ${i.code}: ${i.type} ${i.qty}</div>`).join('')}
-            </div>
-        `).join('') || "<p style='text-align:center;'>No matches.</p>";
+        alert("Synced");
     }
 
     function switchTab(t, el) {
@@ -255,45 +219,37 @@
     }
 
     function filterMoveDropdown() {
-        const q = document.getElementById('moveSearch').value.toLowerCase();
-        const select = document.getElementById('move-code');
-        select.innerHTML = '<option value="">-- Select Item --</option>';
-        inventory.filter(i => i.code.toLowerCase().includes(q)).forEach(item => {
-            select.innerHTML += `<option value="${item.code}">${item.code}</option>`;
+        const q = document.getElementById('moveSearch').value.toLowerCase(), s = document.getElementById('move-code');
+        s.innerHTML = '<option value="">-- Select --</option>';
+        inventory.filter(i => i.code.toLowerCase().includes(q) || (i.desc && i.desc.toLowerCase().includes(q))).forEach(i => {
+            s.innerHTML += `<option value="${i.code}">${i.code} (${i.desc||''})</option>`;
         });
     }
 
     function downloadStockReport() {
-        if(inventory.length === 0) return alert("No inventory to export");
-        let csv = "Item Code,Current Quantity,Status\n";
-        inventory.sort((a,b)=>a.code.localeCompare(b.code)).forEach(i => {
-            const status = i.qty <= (i.min || 0) ? "LOW STOCK" : "OK";
-            csv += `${i.code},${i.qty},${status}\n`;
-        });
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.setAttribute('hidden', '');
-        a.setAttribute('href', url);
-        a.setAttribute('download', `Stock_Take_${new Date().toLocaleDateString()}.csv`);
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        let csv = "Code,Description,Qty,Status\n";
+        inventory.forEach(i => csv += `${i.code},${i.desc},${i.qty},${i.qty<=(i.min||0)?'LOW':'OK'}\n`);
+        const b = new Blob([csv], {type:'text/csv'}), u = window.URL.createObjectURL(b), a = document.createElement('a');
+        a.href = u; a.download = `Stock_${new Date().toLocaleDateString()}.csv`; a.click();
+    }
+
+    async function joinWarehouse() {
+        const id = document.getElementById('join-id-input').value.trim();
+        if(id) { await db.collection("users").doc(currentUser.uid).set({ linkedWarehouse: id }, {merge:true}); location.reload(); }
     }
 
     async function importCSV() {
-        const file = document.getElementById('csvFile').files[0];
+        const file = document.getElementById('csvFile').files[0]; if(!file) return;
         const reader = new FileReader();
-        reader.onload = async function(e) {
-            const lines = e.target.result.split('\n');
-            const path = db.collection("warehouses").doc(currentWarehouseID).collection("inventory");
-            for(let line of lines) {
-                const p = line.split(',');
-                if(p.length >= 4 && p[0].trim().toUpperCase() !== "CODE") {
-                    await path.doc(p[0].trim().toUpperCase()).set({ code: p[0].trim().toUpperCase(), desc: p[1].trim(), min: parseInt(p[2]) || 0, qty: parseInt(p[3]) || 0 });
+        reader.onload = async (e) => {
+            const lines = e.target.result.split('\n'), p = db.collection("warehouses").doc(currentWarehouseID).collection("inventory");
+            for(let l of lines) {
+                const c = l.split(',');
+                if(c.length >= 4 && c[0].toUpperCase() !== 'CODE') {
+                    await p.doc(c[0].trim().toUpperCase()).set({ code: c[0].trim().toUpperCase(), desc: c[1].trim(), min: parseInt(c[2])||0, qty: parseInt(c[3])||0 });
                 }
             }
-            alert("Master Inventory Updated!");
+            alert("Updated");
         };
         reader.readAsText(file);
     }
