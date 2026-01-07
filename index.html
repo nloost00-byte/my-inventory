@@ -2,37 +2,40 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Cloud Inventory Pro</title>
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#2563eb">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2897/2897808.png">
-    
-    <link rel="manifest" href='data:application/manifest+json,{"name":"Inventory Pro","short_name":"InvPro","start_url":".","display":"standalone","background_color":"#f1f5f9","theme_color":"#2563eb","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/2897/2897808.png","sizes":"512x512","type":"image/png"}]}'>
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="manifest" href='data:application/manifest+json,{"name":"Inventory Pro","short_name":"InvPro","start_url":".","display":"standalone","background_color":"#ffffff","theme_color":"#2563eb","icons":[{"src":"icon.png","sizes":"512x512","type":"image/png"}]}'>
 
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     
     <style>
         :root { --primary: #2563eb; --danger: #ef4444; --success: #22c55e; --bg: #f1f5f9; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 10px; padding-bottom: 80px; -webkit-tap-highlight-color: transparent; }
-        /* Prevent text selection while tapping buttons */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 10px; padding-bottom: 90px; -webkit-tap-highlight-color: transparent; }
         * { user-select: none; -webkit-user-select: none; }
         input, select { user-select: text; -webkit-user-select: text; }
 
+        /* Splash Screen Style */
+        #loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-top: 20px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* General UI */
         .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 15px; }
         input, select, button { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
         button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; transition: opacity 0.2s; }
         button:active { opacity: 0.7; }
         
-        .btn-add { background: var(--primary); }
         .btn-post { background: var(--success); margin-top: 15px; font-size: 1.1rem; height: 55px; }
-        .btn-del { background: #fee2e2; color: var(--danger); padding: 5px 10px; width: auto; font-size: 0.75rem; border-radius: 6px; border:none; }
+        .btn-del { background: #fee2e2; color: var(--danger); padding: 5px 10px; width: auto; font-size: 0.75rem; border:none; border-radius: 6px; }
         
         .nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; display: flex; border-top: 1px solid #e2e8f0; height: 75px; z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
-        .nav-item { flex: 1; text-align: center; padding-top: 15px; font-size: 0.75rem; color: #64748b; cursor: pointer; }
+        .nav-item { flex: 1; text-align: center; padding-top: 15px; font-size: 0.75rem; color: #64748b; }
         .nav-item.active { color: var(--primary); font-weight: bold; border-top: 3px solid var(--primary); }
         
         .tab-content { display: none; padding-top: 10px; }
@@ -41,19 +44,23 @@
         table { width: 100%; border-collapse: collapse; }
         th, td { text-align: left; padding: 12px 5px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; }
         .stock-badge { background: #e0f2fe; color: #0369a1; padding: 10px; border-radius: 8px; font-weight: bold; text-align: center; margin-bottom: 10px; }
-        .cart-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #ccc; font-size: 0.9rem; }
         .hist-group { background: white; border-left: 5px solid var(--success); padding: 12px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .hist-header { display: flex; justify-content: space-between; font-weight: bold; color: #1e293b; margin-bottom: 5px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
     </style>
 </head>
 <body>
+
+    <div id="loading-screen">
+        <img src="icon.png" alt="Logo" style="width: 120px; border-radius: 20px;">
+        <div class="spinner"></div>
+        <p style="color: var(--primary); font-weight: bold; margin-top: 20px;">Syncing with Cloud...</p>
+    </div>
 
     <h1 style="text-align:center; font-size: 1.1rem; color: var(--primary); margin: 10px 0;">Cloud Inventory Pro</h1>
 
     <div id="tab-dash" class="tab-content active">
         <div class="card">
             <h2>Inventory Levels</h2>
-            <input type="text" id="searchInput" placeholder="Quick search..." onkeyup="render()">
+            <input type="text" id="searchInput" placeholder="Search items..." onkeyup="render()">
             <table>
                 <thead><tr><th>Item</th><th>Qty</th><th>Stat</th><th>Del</th></tr></thead>
                 <tbody id="invTableBody"></tbody>
@@ -72,12 +79,12 @@
                 <select id="move-type" style="flex:1;"><option value="IN">IN (+)</option><option value="OUT">OUT (-)</option></select>
                 <input type="number" id="move-qty" placeholder="Qty" style="flex:1;" inputmode="numeric">
             </div>
-            <button class="btn-add" onclick="addToCart()">+ Add to List</button>
+            <button onclick="addToCart()">+ Add to List</button>
         </div>
 
         <div class="card" id="cartCard" style="display:none;">
             <h3>Batch Preview</h3>
-            <div id="cartList"></div>
+            <div id="cartList" style="margin-bottom:10px;"></div>
             <button class="btn-post" onclick="processBatch()">Sync Batch to Cloud</button>
             <button onclick="clearCart()" style="background:#64748b; margin-top:5px;">Clear</button>
         </div>
@@ -86,7 +93,7 @@
     <div id="tab-hist" class="tab-content">
         <div class="card">
             <h2>Batch History</h2>
-            <input type="text" id="histSearch" placeholder="Search batch, ref or item..." onkeyup="renderHistory()">
+            <input type="text" id="histSearch" placeholder="Search history..." onkeyup="renderHistory()">
             <button onclick="exportHistoryCSV()" style="background:#64748b; margin-bottom:10px;">📥 Export CSV</button>
             <div id="historyList"></div>
         </div>
@@ -138,9 +145,20 @@
     let cart = [];
     let lastBatchNum = 1000;
 
+    // Remove Splash Screen once data is loaded
+    let firstLoad = true;
+    function hideSplash() {
+        if(firstLoad) {
+            document.getElementById('loading-screen').style.opacity = '0';
+            setTimeout(() => document.getElementById('loading-screen').style.display = 'none', 500);
+            firstLoad = false;
+        }
+    }
+
     db.collection("inventory").onSnapshot(snap => {
         inventory = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         render(); filterMoveDropdown();
+        hideSplash();
     });
 
     db.collection("history").orderBy("batchNum", "desc").limit(50).onSnapshot(snap => {
@@ -186,9 +204,9 @@
         const card = document.getElementById('cartCard');
         card.style.display = cart.length ? 'block' : 'none';
         document.getElementById('cartList').innerHTML = cart.map((item, i) => `
-            <div class="cart-item">
+            <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px dashed #ccc;">
                 <span><strong>${item.code}</strong> (${item.type} ${item.qty})</span>
-                <button class="btn-del" onclick="cart.splice(${i},1);renderCart();">X</button>
+                <span style="color:red" onclick="cart.splice(${i},1);renderCart();">Delete</span>
             </div>
         `).join('');
     }
@@ -208,22 +226,18 @@
             dbBatch.update(db.collection("inventory").doc(entry.code), { qty: newQty });
         });
 
-        const histRef = db.collection("history").doc();
-        dbBatch.set(histRef, {
-            batchNum: batchId,
-            extRef: extRef,
-            items: cart,
-            date: timestamp,
+        dbBatch.set(db.collection("history").doc(), {
+            batchNum: batchId, extRef: extRef, items: cart, date: timestamp,
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
 
         try {
             await dbBatch.commit();
-            alert("Batch #" + batchId + " Saved Successfully!");
+            alert("Batch #" + batchId + " Saved!");
             clearCart();
             document.getElementById('move-inv').value = '';
             document.getElementById('moveSearch').value = '';
-        } catch (e) { alert("Error saving: " + e.message); }
+        } catch (e) { alert("Error: " + e.message); }
     }
 
     function render() {
@@ -237,7 +251,7 @@
                     <td><strong>${item.code}</strong><br><small>${item.desc || ''}</small></td>
                     <td>${item.qty}</td>
                     <td><span style="color:${low?'red':'green'}">${low?'LOW':'OK'}</span></td>
-                    <td><button class="btn-del" onclick="deleteItem('${item.code}')">🗑️</button></td>
+                    <td><button class="btn-del" onclick="deleteItem('${item.code}')">X</button></td>
                 </tr>`;
             }
         });
@@ -247,36 +261,34 @@
         const q = document.getElementById('histSearch').value.toLowerCase();
         const list = document.getElementById('historyList');
         list.innerHTML = history.filter(h => {
-            const matchBatch = h.batchNum && h.batchNum.toString().includes(q);
-            const matchRef = h.extRef && h.extRef.toLowerCase().includes(q);
-            const matchItem = h.items && h.items.some(i => i.code.toLowerCase().includes(q));
-            return matchBatch || matchRef || matchItem;
+            return h.batchNum.toString().includes(q) || h.extRef.toLowerCase().includes(q) || 
+                   h.items.some(i => i.code.toLowerCase().includes(q));
         }).map(h => `
             <div class="hist-group">
-                <div class="hist-header">
+                <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:0.9rem;">
                     <span>Batch #${h.batchNum}</span>
-                    <span style="font-size:0.7rem; font-weight:normal;">${h.date}</span>
+                    <span style="font-weight:normal; font-size:0.75rem;">${h.date}</span>
                 </div>
                 <div style="font-size:0.8rem; color:#64748b; margin-bottom:5px;">Ref: ${h.extRef}</div>
-                ${h.items.map(i => `<div style="font-size:0.85rem; padding:2px 0;">• ${i.code}: ${i.type} ${i.qty}</div>`).join('')}
+                ${h.items.map(i => `<div style="font-size:0.8rem;">• ${i.code}: ${i.type} ${i.qty}</div>`).join('')}
             </div>
-        `).join('') || "No matching history found.";
+        `).join('');
     }
 
     async function addItemMaster() {
         const code = document.getElementById('m-code').value.toUpperCase().trim();
         const desc = document.getElementById('m-desc').value.trim();
         const min = parseInt(document.getElementById('m-min').value) || 0;
-        if(!code) return alert("Code is required");
+        if(!code) return alert("Code required");
         await db.collection("inventory").doc(code).set({ code, desc, min, qty: 0 });
-        alert("Master Item Saved!");
+        alert("Saved!");
     }
 
     async function deleteItem(code) { if(confirm(`Delete ${code}?`)) await db.collection("inventory").doc(code).delete(); }
 
     function importCSV() {
         const file = document.getElementById('csvFile').files[0];
-        if(!file) return alert("Please select a .csv file first");
+        if(!file) return alert("Select CSV");
         const reader = new FileReader();
         reader.onload = async function(e) {
             const lines = e.target.result.split('\n');
@@ -298,12 +310,10 @@
     function exportHistoryCSV() {
         let csv = "Batch#,Date,Reference,Item,Type,Qty\n";
         history.forEach(h => {
-            h.items.forEach(i => {
-                csv += `${h.batchNum},${h.date},${h.extRef},${i.code},${i.type},${i.qty}\n`;
-            });
+            h.items.forEach(i => { csv += `${h.batchNum},${h.date},${h.extRef},${i.code},${i.type},${i.qty}\n`; });
         });
         const blob = new Blob([csv], { type: 'text/csv' });
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Inventory_History.csv'; a.click();
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'History.csv'; a.click();
     }
 </script>
 </body>
